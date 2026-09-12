@@ -1,0 +1,42 @@
+import numpy as np
+import librosa
+import soundfile as sf 
+
+def mix_noise_and_signal(clean_file, noise_file,target_snr_db):
+    #파일로드 (16Khz로 통일)
+    clean,sr=librosa.load(clean_file,sr=16000)
+    noise,sr=librosa.load(noise_file,sr=16000)  
+    
+    #노이즈 길이가 음성보다 짧으면 음성길이만큼 잘라서 맞추기
+    if len(noise)<len(clean):
+        repeats= int(np.ceil(len(clean)/len(noise)))
+        noise=np.tile(noise,repeats)[:len(clean)]
+    #noise길이가 clean보다 길면 clean길이만큼 잘라서 맞추기
+    noise=noise[:len(clean)]
+    #각 신호의 전력 계산
+    p_signal=np.mean(clean**2)
+    p_noise=np.mean(noise**2)
+    # 목표 snr에 맞게 noise 스케일링
+    scaler=np.sqrt(p_signal/(p_noise*10**(target_snr_db/10)))
+    scaled_noise=noise*scaler
+    # 혼합 신호 생성
+    mixed_signal=clean+scaled_noise
+    #클리핑 방지를 위한 정규화
+    max_val=np.max(np.abs(mixed_signal))
+    if max_val>1.0:
+        mixed_signal=mixed_signal/max_val
+    return mixed_signal,sr
+
+#음성 파일 경로
+signalfile='7021-79730-0000.wav'
+noisefile='867210__robinhood76__14066-school-children-ambience-loop.wav'
+
+#생성할 signal to noise ratio (dB)
+snr_list=[0,5,10] #숫자가 커질수록 노이즈 대비 시그널이 커짐
+
+for i in snr_list:
+    mixed_signal,sr=mix_noise_and_signal(signalfile,noisefile,i)
+    #혼합 신호 저장
+    output_name=f'noisy_signal_{i}dB.wav'
+    sf.write(output_name,mixed_signal,sr)
+    print(f"혼합 신호 '{output_name}' 저장 완료 (SNR={i}dB)")
