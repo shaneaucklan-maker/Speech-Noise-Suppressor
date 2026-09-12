@@ -1,0 +1,38 @@
+import matplotlib 
+import matplotlib.pyplot as plt
+import librosa
+import soundfile as sf
+import numpy as np
+
+print("1.soundfile로 파일 읽는 중")
+
+clean,sr=sf.read("7021-79730-0000.wav")
+noise,sr=sf.read("noisy_signal_0dB.wav")
+
+#stft 연산 및 db 변환
+print("2.stft 연산 및 db 변환 중")
+clean_stft=librosa.stft(clean)
+noisy_stft=librosa.stft(noise)
+
+clean_db=librosa.amplitude_to_db(np.abs(clean_stft),ref=np.max)
+noisy_db=librosa.amplitude_to_db(np.abs(noisy_stft),ref=np.max)
+
+# 스펙트로그램 시각화
+print("3.스펙트로그램 시각화 중")
+plt.figure(figsize=(12,8))
+
+plt.subplot(2,1,1)
+librosa.display.specshow(clean_db,sr=sr,x_axis='time',y_axis='hz')
+plt.title("Clean Speech Spectrogram")
+plt.colorbar(format='%+2.0f dB')
+
+plt.subplot(2,1,2)
+librosa.display.specshow(noisy_db,sr=sr,x_axis='time',y_axis='hz')
+plt.title("Noisy Speech Specrogram")
+plt.colorbar(format="%+2.0f dB")
+
+#subplot 간격 조정
+plt.tight_layout()
+
+print("4. 그래프 출력!")
+plt.show()
